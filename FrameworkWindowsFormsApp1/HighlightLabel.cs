@@ -24,7 +24,7 @@ namespace FrameworkWindowsFormsApp1
         /// </summary>
         public HighlightLabel()
         {
-            MouseEnter += HighlightLabel_MouseEnter;            
+            MouseEnter += HighlightLabel_MouseEnter;
             MouseLeave += HighlightLabel_MouseLeave;
         }
 
@@ -40,7 +40,7 @@ namespace FrameworkWindowsFormsApp1
         private void HighlightLabel_MouseEnter(object sender, EventArgs e)
         {
             TryCancelFadeOutBackColor();
-            SetOpaqueBackColor();            
+            SetOpaqueBackColor();
         }
 
         private void TryCancelFadeOutBackColor()
@@ -74,19 +74,21 @@ namespace FrameworkWindowsFormsApp1
                         return;
                     }
 
-                    int currentBackColoralpha = BackColor.A - s_backColorAlphaDecrement;
-                    if (currentBackColoralpha < s_minBackColorAlpha)
+                    int currentBackColorAlpha = BackColor.A - s_backColorAlphaDecrement;
+                    if (currentBackColorAlpha < s_minBackColorAlpha)
                     {
-                        currentBackColoralpha = s_minBackColorAlpha;
+                        currentBackColorAlpha = s_minBackColorAlpha;
                     }
 
-                    Invoke((Action)(() => BackColor = Color.FromArgb(currentBackColoralpha, BackColor)));
+                    Invoke((Action)(() => BackColor = Color.FromArgb(currentBackColorAlpha, BackColor)));
+                }, _backColorFadeOutCancellationTokenSource.Token)
+                .ContinueWith(t =>
+                {
+                    if (BackColor.A > s_minBackColorAlpha && !_backColorFadeOutCancellationTokenSource.IsCancellationRequested)
+                    {
+                        DecreaseBackColorAlpha();
+                    }
                 }, _backColorFadeOutCancellationTokenSource.Token);
-
-            if (BackColor.A > s_minBackColorAlpha && !_backColorFadeOutCancellationTokenSource.IsCancellationRequested)
-            {
-                task.ContinueWith(t => DecreaseBackColorAlpha(), _backColorFadeOutCancellationTokenSource.Token);
-            }
         }
     }
 }
