@@ -17,7 +17,6 @@ namespace FrameworkWindowsFormsApp1
         private static readonly int s_backColorAlphaDecrement = 15;
         private static readonly int s_minBackColorAlpha = 0;
 
-        private int _backColoralpha;
         private CancellationTokenSource _backColorFadeOutCancellationTokenSource;
 
         /// <summary>
@@ -60,7 +59,6 @@ namespace FrameworkWindowsFormsApp1
         private void FadeOutBackColor()
         {
             _backColorFadeOutCancellationTokenSource = new CancellationTokenSource();
-            _backColoralpha = BackColor.A;
 
             DecreaseBackColorAlpha();
         }
@@ -76,16 +74,16 @@ namespace FrameworkWindowsFormsApp1
                         return;
                     }
 
-                    _backColoralpha = _backColoralpha - s_backColorAlphaDecrement;
-                    if (_backColoralpha < s_minBackColorAlpha)
+                    int currentBackColoralpha = BackColor.A - s_backColorAlphaDecrement;
+                    if (currentBackColoralpha < s_minBackColorAlpha)
                     {
-                        _backColoralpha = s_minBackColorAlpha;
+                        currentBackColoralpha = s_minBackColorAlpha;
                     }
 
-                    Invoke((Action)(() => BackColor = Color.FromArgb(_backColoralpha, BackColor)));
+                    Invoke((Action)(() => BackColor = Color.FromArgb(currentBackColoralpha, BackColor)));
                 }, _backColorFadeOutCancellationTokenSource.Token);
 
-            if (_backColoralpha > s_minBackColorAlpha && !_backColorFadeOutCancellationTokenSource.IsCancellationRequested)
+            if (BackColor.A > s_minBackColorAlpha && !_backColorFadeOutCancellationTokenSource.IsCancellationRequested)
             {
                 task.ContinueWith(t => DecreaseBackColorAlpha(), _backColorFadeOutCancellationTokenSource.Token);
             }
