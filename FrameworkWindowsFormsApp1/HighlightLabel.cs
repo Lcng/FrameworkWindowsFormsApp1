@@ -1,15 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace FrameworkWindowsFormsApp1
 {
+    /// <summary>
+    /// 高亮标签：当光标进入标签时，其背景色会显示；当光标离开标签时，其背景色会淡出
+    /// </summary>
     internal class HighlightLabel : Label
     {
         private static readonly int s_backColorAlphaDecreaseIntervalInMilliseconds = 10;
@@ -18,35 +17,55 @@ namespace FrameworkWindowsFormsApp1
         private static readonly int s_backColorAlphaDecrement = 15;
         private static readonly int s_minBackColorAlpha = 0;
 
-        private int _backColoralpha = s_maxBackColorAlpha;
+        private int _backColoralpha;
         private CancellationTokenSource _backColorFadeOutCancellationTokenSource;
 
+        /// <summary>
+        /// 构造高亮标签
+        /// </summary>
         public HighlightLabel()
         {
-            MouseEnter += highlightLabel_MouseEnter;            
-            MouseLeave += highlightLabel_MouseLeave;
+            MouseEnter += HighlightLabel_MouseEnter;            
+            MouseLeave += HighlightLabel_MouseLeave;
         }
 
-        private void highlightLabel_MouseEnter(object sender, EventArgs e)
+        protected override void InitLayout()
+        {
+            base.InitLayout();
+
+            SetTransparentBackColor();
+        }
+
+        private void SetTransparentBackColor() => BackColor = Color.FromArgb(s_minBackColorAlpha, BackColor);
+
+        private void HighlightLabel_MouseEnter(object sender, EventArgs e)
+        {
+            TryCancelFadeOutBackColor();
+            SetOpaqueBackColor();            
+        }
+
+        private void TryCancelFadeOutBackColor()
         {
             if (_backColorFadeOutCancellationTokenSource != null)
             {
                 _backColorFadeOutCancellationTokenSource.Cancel();
                 _backColorFadeOutCancellationTokenSource.Dispose();
             }
-
-            BackColor = Color.FromArgb(s_maxBackColorAlpha, Color.Red);
         }
 
-        private void highlightLabel_MouseLeave(object sender, EventArgs e)
+        private void SetOpaqueBackColor() => BackColor = Color.FromArgb(s_maxBackColorAlpha, BackColor);
+
+        private void HighlightLabel_MouseLeave(object sender, EventArgs e) => FadeOutBackColor();
+
+        private void FadeOutBackColor()
         {
             _backColorFadeOutCancellationTokenSource = new CancellationTokenSource();
-            _backColoralpha = s_maxBackColorAlpha;
+            _backColoralpha = BackColor.A;
 
-            BackColorFadeOut();
+            DecreaseBackColorAlpha();
         }
 
-        private void BackColorFadeOut()
+        private void DecreaseBackColorAlpha()
         {
             Task task = Task
                 .Delay(s_backColorAlphaDecreaseIntervalInMilliseconds, _backColorFadeOutCancellationTokenSource.Token)
@@ -58,17 +77,17 @@ namespace FrameworkWindowsFormsApp1
                     }
 
                     _backColoralpha = _backColoralpha - s_backColorAlphaDecrement;
-                    if (_backColoralpha < 0)
+                    if (_backColoralpha < s_minBackColorAlpha)
                     {
-                        _backColoralpha = 0;
+                        _backColoralpha = s_minBackColorAlpha;
                     }
 
-                    Invoke((Action)(() => BackColor = Color.FromArgb(_backColoralpha, Color.Red)));
+                    Invoke((Action)(() => BackColor = Color.FromArgb(_backColoralpha, BackColor)));
                 }, _backColorFadeOutCancellationTokenSource.Token);
 
-            if (_backColoralpha > 0 && !_backColorFadeOutCancellationTokenSource.IsCancellationRequested)
+            if (_backColoralpha > s_minBackColorAlpha && !_backColorFadeOutCancellationTokenSource.IsCancellationRequested)
             {
-                task.ContinueWith(t => BackColorFadeOut(), _backColorFadeOutCancellationTokenSource.Token);
+                task.ContinueWith(t => DecreaseBackColorAlpha(), _backColorFadeOutCancellationTokenSource.Token);
             }
         }
     }
